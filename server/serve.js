@@ -13,6 +13,8 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || "";
+
 const STATIC_ROOT = path.resolve(__dirname, "..", "static-build");
 const TEMPLATE_PATH = path.resolve(__dirname, "templates", "landing-page.html");
 const basePath = (process.env.BASE_PATH || "/").replace(/\/+$/, "");
@@ -107,12 +109,70 @@ function serveStaticFile(urlPath, res) {
 const landingPageTemplate = fs.readFileSync(TEMPLATE_PATH, "utf-8");
 const appName = getAppName();
 
+async function handleAIRequest(req, res) {
+  if (!ANTHROPIC_API_KEY) {
+    res.writeHead(500, { "content-type": "application/json" });
+    res.end(JSON.stringify({ error: "ANTHROPIC_API_KEY not configured" }));
+    return;
+  }
+
+  let body = "";
+  req.on("data", (chunk) => { body += chunk; });
+  req.on("end", async () => {
+    try {
+      const { prompt, systemPrompt } = JSON.parse(body);
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-api-key": ANTHROPIC_API_KEY,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 2048,
+          system: systemPrompt,
+          messages: [{ role: "user", content: prompt }],
+        }),
+      });
+      const data = await response.json();
+      const text = data.content?.[0]?.text || "";
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ text }));
+    } catch (err) {
+      res.writeHead(500, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "AI request failed" }));
+    }
+  });
+}
+
 const server = http.createServer((req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") {
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
   const url = new URL(req.url || "/", `http://${req.headers.host}`);
   let pathname = url.pathname;
 
   if (basePath && pathname.startsWith(basePath)) {
     pathname = pathname.slice(basePath.length) || "/";
+  }
+
+  if (req.method === "POST" && pathname === "/api/ai/analyze") {
+    return handleAIRequest(req, res);
+  }
+
+  if (req.method === "POST" && pathname === "/api/analysis-log") {
+    req.resume();
+    res.writeHead(200, { "content-type": "application/json" });
+    res.end(JSON.stringify({ ok: true }));
+    return;
   }
 
   if (pathname === "/" || pathname === "/manifest") {

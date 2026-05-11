@@ -2,7 +2,7 @@
   "expo": {
     "name": "CaseBuilder AI",
     "slug": "casebuilder-ai",
-    "version": "1.0.0",
+    "version": "1.0.6",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "mobile",
@@ -16,12 +16,13 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.casebuilder.ai",
-      "buildNumber": "1",
+      "buildNumber": "13",
       "infoPlist": {
         "NSCameraUsageDescription": "CaseBuilder AI uses your camera to capture evidence photos and documents for your case.",
         "NSPhotoLibraryUsageDescription": "CaseBuilder AI accesses your photo library to attach evidence images and documents to your case.",
         "NSPhotoLibraryAddUsageDescription": "CaseBuilder AI saves captured evidence photos to your photo library.",
-        "NSFaceIDUsageDescription": "CaseBuilder AI uses Face ID to protect your sensitive legal case data."
+        "NSFaceIDUsageDescription": "CaseBuilder AI uses Face ID to protect your sensitive legal case data.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -56,14 +57,12 @@
       "expo-local-authentication"
     ],
     "experiments": {
-      "typedRoutes": true,
-      "reactCompiler": true
+      "typedRoutes": true
     },
     "extra": {
       "eas": {
         "projectId": "b0f1611e-8628-4328-aed7-39d0b5560075"
       }
-    },
-    "owner": "spiderblaster"
+    }
   }
 }
