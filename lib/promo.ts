@@ -2,7 +2,7 @@ import * as SecureStore from "expo-secure-store";
 
 const PROMO_KEY = "casebuilder_promo";
 const DEVICE_ID_KEY = "casebuilder_device_id";
-const API_BASE = `https://${process.env.EXPO_PUBLIC_DOMAIN ?? "casebuilderai.replit.app"}`;
+const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL ?? "https://casebuilder-server.onrender.com";
 
 export interface PromoAccess {
   expiresAt: string;

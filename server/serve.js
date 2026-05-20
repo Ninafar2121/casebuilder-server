@@ -212,6 +212,29 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (req.method === "POST" && pathname === "/api/promo/redeem") {
+    let body = "";
+    req.on("data", (chunk) => { body += chunk; });
+    req.on("end", () => {
+      try {
+        const { code } = JSON.parse(body);
+        const PROMO_CODES = JSON.parse(process.env.PROMO_CODES || "{}");
+        const promo = PROMO_CODES[code?.toUpperCase()];
+        if (!promo) {
+          res.writeHead(200, { "content-type": "application/json" });
+          res.end(JSON.stringify({ valid: false, error: "Invalid promo code" }));
+          return;
+        }
+        res.writeHead(200, { "content-type": "application/json" });
+        res.end(JSON.stringify({ valid: true, expiresAt: promo.expiresAt, label: promo.label }));
+      } catch {
+        res.writeHead(400, { "content-type": "application/json" });
+        res.end(JSON.stringify({ valid: false, error: "Invalid request" }));
+      }
+    });
+    return;
+  }
+
   if (pathname === "/" || pathname === "/manifest") {
     const platform = req.headers["expo-platform"];
     if (platform === "ios" || platform === "android") {

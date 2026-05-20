@@ -46,7 +46,7 @@ const SECTIONS = [
   {
     title: "Payments",
     icon: "credit-card" as const,
-    content: `Payment processing is handled by Stripe, a PCI-DSS compliant payment processor. We never store your full credit card number. Stripe's privacy policy governs payment data handling.`,
+    content: `All payments are processed securely through Apple's App Store. We never collect or store your payment information. Apple's privacy policy and terms govern all payment transactions. Subscriptions can be managed and cancelled at any time through your Apple ID settings.`,
   },
   {
     title: "Contact Us",
@@ -86,7 +86,7 @@ export default function PrivacyScreen() {
         </View>
 
         <Text style={[styles.lastUpdated, { color: colors.mutedForeground }]}>
-          Last updated: April 2025 · Applies to Canada & United States
+          Last updated: May 2026 · Applies to Canada & United States
         </Text>
 
         {SECTIONS.map((section) => (
