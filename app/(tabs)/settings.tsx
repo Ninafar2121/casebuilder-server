@@ -19,6 +19,7 @@ import { useProfile } from "@/context/ProfileContext";
 import { useColors } from "@/hooks/useColors";
 import { useTranslation } from "@/hooks/useTranslation";
 import { openSupportEmail } from "@/lib/support";
+import { useSubscription } from "@/lib/revenuecat";
 
 function SettingRow({
   icon,
@@ -115,6 +116,7 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { profile, updateProfile } = useProfile();
   const { lockEnabled, autoLockMinutes, hasBiometrics, setLockEnabled, setAutoLockMinutes } = useAppLock();
+  const { activeTier, isSubscribed } = useSubscription();
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : 0;
@@ -202,11 +204,12 @@ export default function SettingsScreen() {
         <View style={[styles.cardGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <SettingRow
             icon="award"
-            label="CaseBuilder AI — Full Access"
-            subtitle="All features are currently free"
+            label={isSubscribed ? "CaseBuilder AI — Active" : "CaseBuilder AI — Free Trial"}
+            subtitle={isSubscribed ? "$2.99/mo · Cancel anytime in App Store settings" : t("upgradePlanSub")}
+            onPress={isSubscribed ? undefined : () => router.push("/paywall")}
             rightElement={
-              <View style={[styles.tierBadge, { backgroundColor: "#1F6F78" }]}>
-                <Text style={styles.tierBadgeText}>FREE</Text>
+              <View style={[styles.tierBadge, { backgroundColor: isSubscribed ? "#1F6F78" : "#C9A227" }]}>
+                <Text style={styles.tierBadgeText}>{isSubscribed ? "ACTIVE" : "UPGRADE"}</Text>
               </View>
             }
           />
