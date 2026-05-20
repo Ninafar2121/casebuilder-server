@@ -16,7 +16,7 @@ export const PACKAGE_BASIC = "basic_monthly";
 export const PACKAGE_PLUS = "plus_monthly";
 export const PACKAGE_PRO = "pro_monthly";
 
-export const PRODUCT_ID_BASIC = "com.casebuilderai.basic.monthly.299";
+export const PRODUCT_ID_BASIC = "com.casebuilderai.pro.monthly.299";
 export const PRODUCT_ID_PLUS = "com.casebuilderai.plus.monthly";
 export const PRODUCT_ID_PRO = "com.casebuilderai.pro.monthly";
 
