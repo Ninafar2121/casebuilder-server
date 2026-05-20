@@ -15,7 +15,6 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { EmptyStateCard } from "@/components/EmptyStateCard";
 import { SectionHeader } from "@/components/SectionHeader";
-import { UpgradeCard } from "@/components/UpgradeCard";
 import { useCases } from "@/context/CaseContext";
 import { useProfile } from "@/context/ProfileContext";
 import { useColors } from "@/hooks/useColors";
@@ -408,9 +407,6 @@ export default function HomeScreen() {
           </View>
           <Feather name="chevron-right" size={16} color={TEXT_SECONDARY} />
         </Pressable>
-
-        {/* ── Premium card — only show after user has at least one case ── */}
-        {cases.length > 0 && <UpgradeCard />}
 
         {/* ── Export shortcut ── */}
         {cases.length > 0 && (

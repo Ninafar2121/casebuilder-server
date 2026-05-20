@@ -59,6 +59,7 @@
     "@expo-google-fonts/montserrat": "^0.4.2",
     "@expo-google-fonts/raleway": "^0.4.2",
     "expo-clipboard": "^8.0.8",
+    "expo-dev-client": "~6.0.21",
     "expo-document-picker": "~14.0.8",
     "expo-local-authentication": "^17.0.8",
     "expo-print": "~15.0.8",

@@ -5,7 +5,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import Constants from "expo-constants";
 
 const REVENUECAT_TEST_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_TEST_API_KEY;
-const REVENUECAT_IOS_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY;
+const REVENUECAT_IOS_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY ?? "appl_EdkbZEJokOcaJmXBxWlbmKCmRYX";
 const REVENUECAT_ANDROID_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY;
 
 export const ENTITLEMENT_BASIC = "basic";
@@ -16,8 +16,7 @@ export const PACKAGE_BASIC = "basic_monthly";
 export const PACKAGE_PLUS = "plus_monthly";
 export const PACKAGE_PRO = "pro_monthly";
 
-// App Store / Play Store product IDs (must match App Store Connect exactly)
-export const PRODUCT_ID_BASIC = "com.casebuilderai.basic.monthly";
+export const PRODUCT_ID_BASIC = "com.casebuilderai.basic.monthly.299";
 export const PRODUCT_ID_PLUS = "com.casebuilderai.plus.monthly";
 export const PRODUCT_ID_PRO = "com.casebuilderai.pro.monthly";
 
@@ -25,20 +24,23 @@ export type AppTier = "free" | "basic" | "plus" | "pro";
 const TIER_ORDER: AppTier[] = ["free", "basic", "plus", "pro"];
 
 function getRevenueCatApiKey(): string {
-  if (!REVENUECAT_TEST_API_KEY || !REVENUECAT_IOS_API_KEY || !REVENUECAT_ANDROID_API_KEY) {
-    throw new Error("RevenueCat Public API Keys not found");
+  if (Platform.OS === "ios") {
+    const key = REVENUECAT_IOS_API_KEY ?? REVENUECAT_TEST_API_KEY;
+    if (!key) throw new Error("RevenueCat iOS API Key not found");
+    return key;
   }
-  if (__DEV__ || Platform.OS === "web" || Constants.executionEnvironment === "storeClient") {
-    return REVENUECAT_TEST_API_KEY;
+  if (Platform.OS === "android") {
+    const key = REVENUECAT_ANDROID_API_KEY ?? REVENUECAT_TEST_API_KEY;
+    if (!key) throw new Error("RevenueCat Android API Key not found");
+    return key;
   }
-  if (Platform.OS === "ios") return REVENUECAT_IOS_API_KEY;
-  if (Platform.OS === "android") return REVENUECAT_ANDROID_API_KEY;
-  return REVENUECAT_TEST_API_KEY;
+  const key = REVENUECAT_TEST_API_KEY ?? REVENUECAT_IOS_API_KEY;
+  if (!key) throw new Error("RevenueCat API Key not found");
+  return key;
 }
 
 export function initializeRevenueCat() {
   const apiKey = getRevenueCatApiKey();
-  if (!apiKey) throw new Error("RevenueCat Public API Key not found");
   Purchases.setLogLevel(Purchases.LOG_LEVEL.DEBUG);
   Purchases.configure({ apiKey });
   console.log("Configured RevenueCat");
@@ -46,10 +48,10 @@ export function initializeRevenueCat() {
 
 function deriveTier(customerInfo: CustomerInfo | undefined): AppTier {
   if (!customerInfo) return "free";
-  const active = customerInfo.entitlements.active;
-  if (active[ENTITLEMENT_PRO]) return "pro";
-  if (active[ENTITLEMENT_PLUS]) return "plus";
-  if (active[ENTITLEMENT_BASIC]) return "basic";
+  const entitlements = customerInfo.entitlements.active;
+  if (entitlements[ENTITLEMENT_PRO]) return "pro";
+  if (entitlements[ENTITLEMENT_PLUS]) return "plus";
+  if (entitlements[ENTITLEMENT_BASIC]) return "basic";
   return "free";
 }
 
@@ -95,9 +97,9 @@ function useSubscriptionContext() {
   const isSubscribed = activeTier !== "free";
 
   const packages = offeringsQuery.data?.current?.availablePackages ?? [];
-  const basicPackage = packages.find((p) => p.identifier === PACKAGE_BASIC);
-  const plusPackage = packages.find((p) => p.identifier === PACKAGE_PLUS);
-  const proPackage = packages.find((p) => p.identifier === PACKAGE_PRO);
+  const basicPackage = packages.find((p) => p.identifier === PACKAGE_BASIC) ?? packages[0] ?? null;
+  const plusPackage = packages.find((p) => p.identifier === PACKAGE_PLUS) ?? null;
+  const proPackage = packages.find((p) => p.identifier === PACKAGE_PRO) ?? null;
 
   return {
     customerInfo: customerInfoQuery.data,

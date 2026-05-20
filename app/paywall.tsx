@@ -2,103 +2,75 @@ import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Linking from "expo-linking";
 import { router } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Modal,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
-import { useSubscription, PACKAGE_BASIC, PACKAGE_PLUS, PACKAGE_PRO, AppTier } from "@/lib/revenuecat";
+import Purchases from "react-native-purchases";
+import { useSubscription } from "@/lib/revenuecat";
+import { redeemPromoCode, getPromoAccess, type PromoAccess } from "@/lib/promo";
 import type { PurchasesPackage } from "react-native-purchases";
 
-const HERO_FEATURES = [
+const ALL_FEATURES = [
   { icon: "map-pin", text: "AI analysis tailored to your province or state" },
   { icon: "cpu", text: "AI case summary based on your jurisdiction's laws" },
   { icon: "search", text: "Detect documentation gaps & risks automatically" },
-  { icon: "message-square", text: "Jurisdiction-specific questions for legal consultations" },
-  { icon: "file-text", text: "Export a clean professional case file (PDF)" },
+  { icon: "message-square", text: "AI Chat assistant for legal questions" },
+  { icon: "file-text", text: "Export a professional case PDF" },
+  { icon: "folder", text: "Unlimited evidence vault" },
+  { icon: "clock", text: "AI-generated case timeline" },
+  { icon: "globe", text: "English & French (EN/FR)" },
 ];
-
-const PLAN_META: Record<string, {
-  color: string;
-  badge?: string;
-  features: string[];
-  tier: AppTier;
-}> = {
-  [PACKAGE_BASIC]: {
-    tier: "basic",
-    color: "#1F6F78",
-    features: [
-      "Up to 5 active cases",
-      "Evidence vault (100 items)",
-      "AI case summary",
-      "Timeline builder",
-      "Basic export",
-      "English & French (EN/FR)",
-    ],
-  },
-  [PACKAGE_PLUS]: {
-    tier: "plus",
-    color: "#C9A227",
-    badge: "Most Popular",
-    features: [
-      "Unlimited cases",
-      "Evidence vault (1,000 items)",
-      "AI summary + gap analysis",
-      "AI timeline generation",
-      "PDF export package",
-      "Jurisdiction guidance",
-      "AI Chat assistant",
-    ],
-  },
-  [PACKAGE_PRO]: {
-    tier: "pro",
-    color: "#16324F",
-    badge: "Best Value",
-    features: [
-      "Everything in Plus",
-      "Unlimited evidence storage",
-      "Professional case packages",
-      "Priority AI processing",
-      "Accessibility read-aloud",
-      "Unlimited exports",
-      "Priority support",
-    ],
-  },
-};
-
-function PlanName(identifier: string) {
-  if (identifier === PACKAGE_BASIC) return "Basic";
-  if (identifier === PACKAGE_PLUS) return "Plus";
-  if (identifier === PACKAGE_PRO) return "Pro";
-  return identifier;
-}
 
 export default function PaywallScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { basicPackage, plusPackage, proPackage, purchase, isPurchasing, restore, isRestoring, activeTier } = useSubscription();
+  const { basicPackage, purchase, isPurchasing, restore, isRestoring, activeTier } = useSubscription();
 
-  const [pendingPackage, setPendingPackage] = useState<PurchasesPackage | null>(null);
+  const [promoAccess, setPromoAccess] = useState<PromoAccess | null>(null);
+  const [showPromoModal, setShowPromoModal] = useState(false);
+  const [promoCode, setPromoCode] = useState("");
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [promoSuccess, setPromoSuccess] = useState<string | null>(null);
+
   const [purchaseSuccess, setPurchaseSuccess] = useState(false);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
 
-  const orderedPackages = [basicPackage, plusPackage, proPackage].filter(Boolean) as PurchasesPackage[];
+  useEffect(() => {
+    getPromoAccess().then(setPromoAccess);
+  }, []);
 
-  const confirmPurchase = async () => {
-    if (!pendingPackage) return;
-    const pkg = pendingPackage;
-    setPendingPackage(null);
+  const handlePurchase = async () => {
+    let pkg = basicPackage;
+    if (!pkg) {
+      try {
+        const offerings = await Purchases.getOfferings();
+        const available = offerings.current?.availablePackages ?? [];
+        pkg = available.find((p) => p.identifier === "basic_monthly") ?? available[0] ?? null;
+      } catch (err: any) {
+        Alert.alert("Connection Error", err?.message ?? "Could not load plans. Please check your connection and try again.");
+        return;
+      }
+    }
+    if (!pkg) {
+      Alert.alert("Not Ready", "Plans are still loading. Please wait a moment and try again.");
+      return;
+    }
     try {
       await purchase(pkg);
       setPurchaseSuccess(true);
@@ -117,9 +89,35 @@ export default function PaywallScreen() {
     }
   };
 
-  const handleContactUs = () => {
-    Linking.openURL("mailto:support@casebuilder.ai?subject=CaseBuilder%20AI%20Enterprise%20Inquiry");
+  const handleRedeemPromo = async () => {
+    if (!promoCode.trim()) return;
+    setPromoLoading(true);
+    setPromoError(null);
+    setPromoSuccess(null);
+    try {
+      const result = await redeemPromoCode(promoCode);
+      if (result.success && result.access) {
+        setPromoAccess(result.access);
+        setPromoSuccess(result.message);
+        setTimeout(() => {
+          setShowPromoModal(false);
+          setPromoCode("");
+          setPromoSuccess(null);
+          router.back();
+        }, 1800);
+      } else {
+        setPromoError(result.message);
+      }
+    } catch {
+      setPromoError("Could not connect. Please check your connection and try again.");
+    } finally {
+      setPromoLoading(false);
+    }
   };
+
+  const promoExpiryText = promoAccess
+    ? `Free access until ${new Date(promoAccess.expiresAt).toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })}`
+    : null;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -137,29 +135,29 @@ export default function PaywallScreen() {
         contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 40 }]}
         showsVerticalScrollIndicator={false}
       >
+        {promoAccess && (
+          <View style={[styles.promoBanner, { backgroundColor: colors.teal + "18", borderColor: colors.teal + "50" }]}>
+            <Feather name="gift" size={16} color={colors.teal} />
+            <Text style={[styles.promoBannerText, { color: colors.teal }]}>{promoExpiryText}</Text>
+          </View>
+        )}
+
         <View style={styles.hero}>
           <View style={[styles.heroBadge, { backgroundColor: colors.teal + "18", borderColor: colors.teal + "40" }]}>
             <Feather name="shield" size={12} color={colors.teal} />
-            <Text style={[styles.heroBadgeText, { color: colors.teal }]}>CaseBuilder AI Premium</Text>
+            <Text style={[styles.heroBadgeText, { color: colors.teal }]}>CaseBuilder AI</Text>
           </View>
 
           <Text style={[styles.heroHeadline, { color: colors.navy }]}>
-            AI case analysis{"\n"}tailored to your{"\n"}province or state
+            Everything you need{"\n"}to fight your case
           </Text>
 
           <Text style={[styles.heroSubtext, { color: colors.mutedForeground }]}>
-            Built to analyze cases using the legal framework of your selected Canadian province or U.S. state.
+            AI-powered case analysis tailored to your Canadian province or U.S. state — try free for 7 days, then $2.99/month.
           </Text>
 
-          <View style={[styles.painBox, { backgroundColor: colors.goldLight, borderColor: colors.gold + "60" }]}>
-            <Feather name="alert-circle" size={14} color={colors.gold} />
-            <Text style={[styles.painText, { color: colors.slate }]}>
-              Most people miss key details that can weaken their case. CaseBuilder AI organizes yours — jurisdiction by jurisdiction.
-            </Text>
-          </View>
-
           <View style={styles.featureList}>
-            {HERO_FEATURES.map((f) => (
+            {ALL_FEATURES.map((f) => (
               <View key={f.text} style={styles.featureItem}>
                 <View style={[styles.featureIconWrap, { backgroundColor: colors.teal + "15" }]}>
                   <Feather name={f.icon as any} size={15} color={colors.teal} />
@@ -168,133 +166,55 @@ export default function PaywallScreen() {
               </View>
             ))}
           </View>
-
-          {plusPackage && (
-            <Pressable
-              onPress={() => setPendingPackage(plusPackage)}
-              disabled={isPurchasing}
-              style={({ pressed }) => [styles.heroCTAWrap, { opacity: pressed ? 0.9 : 1 }]}
-            >
-              <LinearGradient
-                colors={["#2A8A98", "#1E3A5F"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.heroCTA}
-              >
-                {isPurchasing ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <>
-                    <Text style={styles.heroCTAText}>
-                      Get Plus — {plusPackage.product.priceString}/mo
-                    </Text>
-                    <Feather name="arrow-right" size={18} color="#FFFFFF" />
-                  </>
-                )}
-              </LinearGradient>
-            </Pressable>
-          )}
-
-          <Text style={[styles.trustLine, { color: colors.mutedForeground }]}>
-            Unlock premium features · Cancel anytime in App Store settings
-          </Text>
         </View>
 
-        <View style={styles.sectionDivider}>
-          <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-          <Text style={[styles.dividerText, { color: colors.mutedForeground }]}>Choose your plan</Text>
-          <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-        </View>
-
-        {orderedPackages.length === 0 ? (
-          <View style={[styles.loadingCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <ActivityIndicator color={colors.teal} />
-            <Text style={[styles.loadingText, { color: colors.mutedForeground }]}>Loading plans…</Text>
+        <View style={[styles.planCard, { backgroundColor: colors.card, borderColor: colors.teal, shadowColor: colors.teal }]}>
+          <View style={[styles.planBadge, { backgroundColor: colors.teal }]}>
+            <Text style={styles.planBadgeText}>All Features Included</Text>
           </View>
-        ) : (
-          orderedPackages.map((pkg) => {
-            const meta = PLAN_META[pkg.identifier];
-            if (!meta) return null;
-            const isActive = activeTier === meta.tier;
-            const isPopular = pkg.identifier === PACKAGE_PLUS;
 
-            return (
-              <View
-                key={pkg.identifier}
-                style={[
-                  styles.planCard,
-                  {
-                    backgroundColor: colors.card,
-                    borderColor: isPopular ? meta.color : colors.border,
-                    borderWidth: isPopular ? 2 : 1,
-                  },
-                ]}
-              >
-                {meta.badge && (
-                  <View style={[styles.badge, { backgroundColor: meta.color }]}>
-                    <Text style={styles.badgeText}>{meta.badge}</Text>
-                  </View>
-                )}
-                {isActive && (
-                  <View style={[styles.activeBadge, { backgroundColor: colors.teal }]}>
-                    <Text style={styles.badgeText}>Current Plan</Text>
-                  </View>
-                )}
-
-                <View style={styles.planHeader}>
-                  <Text style={[styles.planName, { color: colors.foreground }]}>{PlanName(pkg.identifier)}</Text>
-                  <View style={styles.priceRow}>
-                    <Text style={[styles.price, { color: meta.color }]}>{pkg.product.priceString}</Text>
-                    <Text style={[styles.period, { color: colors.mutedForeground }]}>/mo</Text>
-                  </View>
-                </View>
-
-                <View style={[styles.featureDivider, { backgroundColor: colors.border }]} />
-
-                {meta.features.map((f) => (
-                  <View key={f} style={styles.featureRow}>
-                    <Feather name="check" size={14} color={meta.color} />
-                    <Text style={[styles.featureText, { color: colors.foreground }]}>{f}</Text>
-                  </View>
-                ))}
-
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.planBtn,
-                    {
-                      backgroundColor: isActive ? colors.border : meta.color,
-                      opacity: pressed || isPurchasing ? 0.8 : 1,
-                    },
-                  ]}
-                  onPress={() => !isActive && setPendingPackage(pkg)}
-                  disabled={isActive || isPurchasing}
-                >
-                  <Text style={[styles.planBtnText, { color: isActive ? colors.mutedForeground : "#FFFFFF" }]}>
-                    {isActive ? "Active Plan" : `Subscribe — ${pkg.product.priceString}/mo`}
-                  </Text>
-                </Pressable>
-              </View>
-            );
-          })
-        )}
-
-        <View style={[styles.unlimitedCard, { backgroundColor: colors.navy }]}>
-          <View style={styles.unlimitedHeader}>
-            <Feather name="zap" size={20} color={colors.gold} />
-            <Text style={styles.unlimitedName}>Unlimited Enterprise</Text>
-            <Text style={styles.unlimitedPrice}>Contact Us</Text>
+          <View style={styles.planHeader}>
+            <Text style={[styles.planName, { color: colors.foreground }]}>CaseBuilder AI</Text>
+            <View style={styles.priceRow}>
+              <Text style={[styles.price, { color: colors.teal }]}>$2.99</Text>
+              <Text style={[styles.period, { color: colors.mutedForeground }]}>/month</Text>
+            </View>
+            <Text style={[styles.billingNote, { color: colors.mutedForeground }]}>
+              7-day free trial · Auto-renews monthly · Cancel anytime in App Store settings
+            </Text>
           </View>
-          <Text style={styles.unlimitedDesc}>
-            For law firms, consumer advocacy groups, or organizations handling high volumes of cases.
-          </Text>
+
           <Pressable
-            style={({ pressed }) => [styles.unlimitedBtn, { borderColor: colors.gold, opacity: pressed ? 0.7 : 1 }]}
-            onPress={handleContactUs}
+            style={({ pressed }) => [styles.subscribeBtn, { opacity: pressed || isPurchasing ? 0.85 : 1 }]}
+            onPress={handlePurchase}
+            disabled={isPurchasing || activeTier !== "free"}
           >
-            <Feather name="mail" size={14} color={colors.gold} />
-            <Text style={[styles.unlimitedBtnText, { color: colors.gold }]}>Get in Touch</Text>
+            <LinearGradient
+              colors={["#2A8A98", "#1E3A5F"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.subscribeBtnInner}
+            >
+              {isPurchasing ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : activeTier !== "free" ? (
+                <Text style={styles.subscribeBtnText}>Active Plan</Text>
+              ) : (
+                <Text style={styles.subscribeBtnText}>
+                  Start Free Trial — {basicPackage?.product.priceString ?? "$2.99"}/mo after
+                </Text>
+              )}
+            </LinearGradient>
           </Pressable>
         </View>
+
+        <Pressable
+          style={({ pressed }) => [styles.promoLink, { opacity: pressed ? 0.6 : 1 }]}
+          onPress={() => setShowPromoModal(true)}
+        >
+          <Feather name="gift" size={14} color={colors.teal} />
+          <Text style={[styles.promoLinkText, { color: colors.teal }]}>Have a promo code?</Text>
+        </Pressable>
 
         <Pressable
           style={({ pressed }) => [styles.restoreBtn, { opacity: pressed || isRestoring ? 0.6 : 1 }]}
@@ -304,12 +224,12 @@ export default function PaywallScreen() {
           {isRestoring ? (
             <ActivityIndicator color={colors.teal} size="small" />
           ) : (
-            <Text style={[styles.restoreText, { color: colors.teal }]}>Restore Purchases</Text>
+            <Text style={[styles.restoreText, { color: colors.mutedForeground }]}>Restore Purchases</Text>
           )}
         </Pressable>
 
         <Text style={[styles.legalNote, { color: colors.mutedForeground }]}>
-          Results are based on jurisdiction-specific laws and patterns, but are provided for informational purposes only. Not legal advice. Not a law firm. Not a substitute for a licensed attorney.
+          Results are based on jurisdiction-specific laws and are for informational purposes only. Not legal advice. Not a law firm.
         </Text>
 
         <Text style={[styles.legalNote, { color: colors.mutedForeground }]}>
@@ -319,51 +239,78 @@ export default function PaywallScreen() {
         <View style={[styles.securityRow, { borderColor: colors.border }]}>
           <Feather name="shield" size={14} color={colors.successGreen} />
           <Text style={[styles.securityText, { color: colors.mutedForeground }]}>
-            Secured by Apple · Data encrypted on device · Cancel anytime
+            Secured by Apple · Data encrypted on device
           </Text>
+        </View>
+
+        <View style={styles.legalLinks}>
+          <Pressable onPress={() => Linking.openURL("https://casebuilder-server.onrender.com/privacy")}>
+            <Text style={[styles.legalLink, { color: colors.teal }]}>Privacy Policy</Text>
+          </Pressable>
+          <Text style={[styles.legalLinkSep, { color: colors.mutedForeground }]}>·</Text>
+          <Pressable onPress={() => Linking.openURL("https://casebuilder-server.onrender.com/terms")}>
+            <Text style={[styles.legalLink, { color: colors.teal }]}>Terms of Use (EULA)</Text>
+          </Pressable>
         </View>
       </ScrollView>
 
-      <Modal transparent animationType="fade" visible={!!pendingPackage} onRequestClose={() => setPendingPackage(null)}>
+      {/* Promo Code Modal */}
+      <Modal transparent animationType="fade" visible={showPromoModal} onRequestClose={() => setShowPromoModal(false)}>
         <View style={styles.modalOverlay}>
           <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
-            <Text style={[styles.modalTitle, { color: colors.foreground }]}>Confirm Purchase</Text>
-            {pendingPackage && (
+            <View style={[styles.promoIconWrap, { backgroundColor: colors.teal + "18" }]}>
+              <Feather name="gift" size={28} color={colors.teal} />
+            </View>
+            <Text style={[styles.modalTitle, { color: colors.foreground }]}>Enter Promo Code</Text>
+            <Text style={[styles.modalBody, { color: colors.mutedForeground }]}>
+              Enter your code below to unlock free access.
+            </Text>
+
+            {promoSuccess ? (
+              <View style={[styles.promoSuccessBox, { backgroundColor: colors.teal + "18" }]}>
+                <Feather name="check-circle" size={18} color={colors.teal} />
+                <Text style={[styles.promoSuccessText, { color: colors.teal }]}>{promoSuccess}</Text>
+              </View>
+            ) : (
               <>
-                <Text style={[styles.modalBody, { color: colors.mutedForeground }]}>
-                  You are about to subscribe to{" "}
-                  <Text style={{ color: colors.foreground, fontFamily: "DMSans_600SemiBold" }}>
-                    {PlanName(pendingPackage.identifier)}
-                  </Text>{" "}
-                  for{" "}
-                  <Text style={{ color: colors.foreground, fontFamily: "DMSans_600SemiBold" }}>
-                    {pendingPackage.product.priceString}/month
-                  </Text>
-                  .
-                </Text>
-                <Text style={[styles.modalNote, { color: colors.mutedForeground }]}>
-                  This is a test purchase. Your payment method will not be charged.
-                </Text>
+                <TextInput
+                  style={[styles.codeInput, { borderColor: promoError ? "#EF4444" : colors.border, color: colors.foreground, backgroundColor: colors.background }]}
+                  placeholder="e.g. LAUNCH2026"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={promoCode}
+                  onChangeText={(t) => { setPromoCode(t); setPromoError(null); }}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                />
+                {promoError && (
+                  <Text style={styles.promoErrorText}>{promoError}</Text>
+                )}
+                <View style={styles.modalActions}>
+                  <Pressable
+                    style={({ pressed }) => [styles.modalCancel, { borderColor: colors.border, opacity: pressed ? 0.7 : 1 }]}
+                    onPress={() => { setShowPromoModal(false); setPromoCode(""); setPromoError(null); }}
+                  >
+                    <Text style={[styles.modalCancelText, { color: colors.mutedForeground }]}>Cancel</Text>
+                  </Pressable>
+                  <Pressable
+                    style={({ pressed }) => [styles.modalConfirm, { backgroundColor: colors.teal, opacity: pressed || promoLoading ? 0.8 : 1 }]}
+                    onPress={handleRedeemPromo}
+                    disabled={promoLoading}
+                  >
+                    {promoLoading ? (
+                      <ActivityIndicator color="#FFFFFF" size="small" />
+                    ) : (
+                      <Text style={styles.modalConfirmText}>Redeem</Text>
+                    )}
+                  </Pressable>
+                </View>
               </>
             )}
-            <View style={styles.modalActions}>
-              <Pressable
-                style={({ pressed }) => [styles.modalCancel, { borderColor: colors.border, opacity: pressed ? 0.7 : 1 }]}
-                onPress={() => setPendingPackage(null)}
-              >
-                <Text style={[styles.modalCancelText, { color: colors.mutedForeground }]}>Cancel</Text>
-              </Pressable>
-              <Pressable
-                style={({ pressed }) => [styles.modalConfirm, { backgroundColor: colors.teal, opacity: pressed ? 0.8 : 1 }]}
-                onPress={confirmPurchase}
-              >
-                <Text style={styles.modalConfirmText}>Confirm</Text>
-              </Pressable>
-            </View>
           </View>
         </View>
       </Modal>
 
+      {/* Purchase Success Modal */}
       <Modal transparent animationType="fade" visible={purchaseSuccess} onRequestClose={() => { setPurchaseSuccess(false); router.back(); }}>
         <View style={styles.modalOverlay}>
           <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
@@ -372,7 +319,7 @@ export default function PaywallScreen() {
             </View>
             <Text style={[styles.modalTitle, { color: colors.foreground }]}>You're all set!</Text>
             <Text style={[styles.modalBody, { color: colors.mutedForeground }]}>
-              Your subscription is now active. Enjoy all premium features.
+              Your subscription is active. All features are now unlocked.
             </Text>
             <Pressable
               style={({ pressed }) => [styles.modalConfirm, { backgroundColor: colors.teal, opacity: pressed ? 0.8 : 1 }]}
@@ -384,6 +331,7 @@ export default function PaywallScreen() {
         </View>
       </Modal>
 
+      {/* Purchase Error Modal */}
       <Modal transparent animationType="fade" visible={!!purchaseError} onRequestClose={() => setPurchaseError(null)}>
         <View style={styles.modalOverlay}>
           <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
@@ -404,177 +352,104 @@ export default function PaywallScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  topBar: {
-    paddingHorizontal: 20,
-    paddingBottom: 8,
-    alignItems: "flex-end",
-    backgroundColor: "transparent",
-  },
+  topBar: { paddingHorizontal: 20, paddingBottom: 8, alignItems: "flex-end" },
   closeBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 36, height: 36, borderRadius: 18,
     backgroundColor: "rgba(0,0,0,0.06)",
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: "center", justifyContent: "center",
   },
   scroll: { flex: 1 },
   content: { paddingHorizontal: 20, gap: 16, paddingTop: 4 },
-  hero: { gap: 16, paddingBottom: 8 },
+  promoBanner: {
+    flexDirection: "row", alignItems: "center", gap: 8,
+    padding: 12, borderRadius: 12, borderWidth: 1,
+  },
+  promoBannerText: { fontSize: 13, fontFamily: "DMSans_600SemiBold", flex: 1 },
+  hero: { gap: 16, paddingBottom: 4 },
   heroBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    alignSelf: "flex-start",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 20,
-    borderWidth: 1,
+    flexDirection: "row", alignItems: "center", gap: 6,
+    alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 5,
+    borderRadius: 20, borderWidth: 1,
   },
   heroBadgeText: { fontSize: 11, fontFamily: "DMSans_600SemiBold", letterSpacing: 0.3 },
   heroHeadline: { fontSize: 32, fontFamily: "Raleway_700Bold", letterSpacing: -0.8, lineHeight: 40 },
   heroSubtext: { fontSize: 15, fontFamily: "DMSans_400Regular", lineHeight: 22 },
-  painBox: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 8,
-    padding: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-  },
-  painText: { flex: 1, fontSize: 13, fontFamily: "DMSans_400Regular", lineHeight: 18 },
   featureList: { gap: 10 },
   featureItem: { flexDirection: "row", alignItems: "center", gap: 12 },
   featureIconWrap: { width: 32, height: 32, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   featureItemText: { fontSize: 14, fontFamily: "DMSans_500Medium", flex: 1 },
-  heroCTAWrap: { borderRadius: 18, overflow: "hidden", marginTop: 4 },
-  heroCTA: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    paddingVertical: 18,
-    borderRadius: 18,
+  planCard: {
+    borderRadius: 20, padding: 20, gap: 14,
+    borderWidth: 2, position: "relative", overflow: "hidden",
+    shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 16, elevation: 4,
   },
-  heroCTAText: { color: "#FFFFFF", fontFamily: "Raleway_700Bold", fontSize: 17, letterSpacing: -0.2 },
-  trustLine: { fontSize: 12, fontFamily: "DMSans_400Regular", textAlign: "center", lineHeight: 17 },
-  sectionDivider: { flexDirection: "row", alignItems: "center", gap: 10, marginVertical: 4 },
-  dividerLine: { flex: 1, height: 1 },
-  dividerText: { fontSize: 11, fontFamily: "DMSans_600SemiBold", textTransform: "uppercase", letterSpacing: 0.8 },
-  loadingCard: {
-    borderRadius: 16,
-    padding: 40,
-    alignItems: "center",
-    gap: 12,
-    borderWidth: 1,
+  planBadge: {
+    position: "absolute", top: 16, right: 16,
+    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20,
   },
-  loadingText: { fontSize: 14, fontFamily: "DMSans_400Regular" },
-  planCard: { borderRadius: 18, padding: 20, gap: 10, position: "relative", overflow: "hidden" },
-  badge: {
-    position: "absolute",
-    top: 14,
-    right: 14,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
-  },
-  activeBadge: {
-    position: "absolute",
-    top: 14,
-    right: 14,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
-  },
-  badgeText: { color: "#FFFFFF", fontSize: 11, fontFamily: "DMSans_600SemiBold", letterSpacing: 0.3 },
-  planHeader: { gap: 4, marginBottom: 2, paddingRight: 90 },
+  planBadgeText: { color: "#FFFFFF", fontSize: 11, fontFamily: "DMSans_600SemiBold", letterSpacing: 0.3 },
+  planHeader: { gap: 4, paddingRight: 120 },
   planName: { fontSize: 20, fontFamily: "Raleway_700Bold", letterSpacing: -0.4 },
   priceRow: { flexDirection: "row", alignItems: "baseline", gap: 2 },
-  price: { fontSize: 36, fontFamily: "Raleway_700Bold", letterSpacing: -1 },
+  price: { fontSize: 40, fontFamily: "Raleway_700Bold", letterSpacing: -1 },
   period: { fontSize: 15, fontFamily: "DMSans_400Regular" },
-  featureDivider: { height: 1, marginVertical: 2 },
-  featureRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  featureText: { fontSize: 14, fontFamily: "DMSans_400Regular" },
-  planBtn: {
-    paddingVertical: 15,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 6,
-    minHeight: 50,
+  billingNote: { fontSize: 11, fontFamily: "DMSans_400Regular", lineHeight: 16, marginTop: 2 },
+  subscribeBtn: { borderRadius: 16, overflow: "hidden" },
+  subscribeBtnInner: {
+    paddingVertical: 18, alignItems: "center", justifyContent: "center",
+    flexDirection: "row", gap: 8,
   },
-  planBtnText: { fontFamily: "Raleway_600SemiBold", fontSize: 15 },
-  unlimitedCard: { borderRadius: 18, padding: 20, gap: 12 },
-  unlimitedHeader: { flexDirection: "row", alignItems: "center", gap: 10 },
-  unlimitedName: { fontSize: 16, fontFamily: "Raleway_600SemiBold", color: "#FFFFFF", flex: 1 },
-  unlimitedPrice: { fontSize: 15, fontFamily: "DMSans_600SemiBold", color: "#C9A227" },
-  unlimitedDesc: { fontSize: 13, fontFamily: "DMSans_400Regular", color: "rgba(255,255,255,0.75)", lineHeight: 19 },
-  unlimitedBtn: {
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1.5,
-    flexDirection: "row",
-    gap: 8,
+  subscribeBtnText: { color: "#FFFFFF", fontFamily: "Raleway_700Bold", fontSize: 17, letterSpacing: -0.2 },
+  promoLink: {
+    flexDirection: "row", alignItems: "center", gap: 6,
+    justifyContent: "center", paddingVertical: 4,
   },
-  unlimitedBtnText: { fontFamily: "DMSans_600SemiBold", fontSize: 14 },
-  restoreBtn: { alignItems: "center", paddingVertical: 12 },
-  restoreText: { fontSize: 14, fontFamily: "DMSans_500Medium" },
+  promoLinkText: { fontSize: 14, fontFamily: "DMSans_500Medium" },
+  restoreBtn: { alignItems: "center", paddingVertical: 8 },
+  restoreText: { fontSize: 13, fontFamily: "DMSans_400Regular" },
   legalNote: { fontSize: 11, fontFamily: "DMSans_400Regular", textAlign: "center", lineHeight: 17 },
   securityRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    paddingTop: 8,
-    borderTopWidth: 1,
+    flexDirection: "row", alignItems: "center", justifyContent: "center",
+    gap: 6, paddingTop: 8, borderTopWidth: 1,
   },
   securityText: { fontSize: 12, fontFamily: "DMSans_400Regular" },
+  legalLinks: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center",
+    gap: 8, paddingTop: 4, paddingBottom: 8,
+  },
+  legalLink: { fontSize: 12, fontFamily: "DMSans_500Medium" },
+  legalLinkSep: { fontSize: 12 },
   modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 24,
+    flex: 1, backgroundColor: "rgba(0,0,0,0.5)",
+    alignItems: "center", justifyContent: "center", padding: 24,
   },
   modalCard: {
-    width: "100%",
-    borderRadius: 20,
-    padding: 24,
-    gap: 16,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 24,
-    elevation: 8,
+    width: "100%", borderRadius: 20, padding: 24, gap: 14, alignItems: "center",
+    shadowColor: "#000", shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15, shadowRadius: 24, elevation: 8,
   },
-  successIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    alignItems: "center",
-    justifyContent: "center",
+  promoIconWrap: { width: 60, height: 60, borderRadius: 30, alignItems: "center", justifyContent: "center" },
+  promoSuccessBox: { flexDirection: "row", alignItems: "center", gap: 8, padding: 12, borderRadius: 10, width: "100%" },
+  promoSuccessText: { fontSize: 14, fontFamily: "DMSans_600SemiBold", flex: 1 },
+  promoErrorText: { fontSize: 12, color: "#EF4444", fontFamily: "DMSans_400Regular", alignSelf: "flex-start" },
+  codeInput: {
+    width: "100%", borderWidth: 1.5, borderRadius: 12,
+    paddingHorizontal: 14, paddingVertical: 13,
+    fontSize: 16, fontFamily: "DMSans_600SemiBold",
+    letterSpacing: 2, textAlign: "center",
   },
+  successIcon: { width: 64, height: 64, borderRadius: 32, alignItems: "center", justifyContent: "center" },
   modalTitle: { fontSize: 20, fontFamily: "Raleway_700Bold", textAlign: "center" },
   modalBody: { fontSize: 15, fontFamily: "DMSans_400Regular", textAlign: "center", lineHeight: 22 },
-  modalNote: { fontSize: 12, fontFamily: "DMSans_400Regular", textAlign: "center", lineHeight: 18 },
   modalActions: { flexDirection: "row", gap: 12, width: "100%" },
   modalCancel: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: "center",
-    borderWidth: 1,
+    flex: 1, paddingVertical: 14, borderRadius: 12,
+    alignItems: "center", borderWidth: 1,
   },
   modalCancelText: { fontSize: 15, fontFamily: "DMSans_600SemiBold" },
   modalConfirm: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
+    flex: 1, paddingVertical: 14, borderRadius: 12,
+    alignItems: "center", justifyContent: "center",
   },
   modalConfirmText: { color: "#FFFFFF", fontSize: 15, fontFamily: "DMSans_600SemiBold" },
 });

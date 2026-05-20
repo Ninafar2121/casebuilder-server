@@ -168,6 +168,43 @@ const server = http.createServer((req, res) => {
     return handleAIRequest(req, res);
   }
 
+  if (req.method === "POST" && pathname === "/api/chat") {
+    if (!ANTHROPIC_API_KEY) {
+      res.writeHead(500, { "content-type": "application/json" });
+      res.end(JSON.stringify({ error: "ANTHROPIC_API_KEY not configured" }));
+      return;
+    }
+    let body = "";
+    req.on("data", (chunk) => { body += chunk; });
+    req.on("end", async () => {
+      try {
+        const { messages } = JSON.parse(body);
+        const response = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "x-api-key": ANTHROPIC_API_KEY,
+            "anthropic-version": "2023-06-01",
+          },
+          body: JSON.stringify({
+            model: "claude-haiku-4-5-20251001",
+            max_tokens: 1024,
+            system: "You are CaseBuilder AI, a helpful legal case organization assistant. You provide informational support only, never legal advice. Always recommend consulting a licensed lawyer for specific legal questions.",
+            messages,
+          }),
+        });
+        const data = await response.json();
+        const reply = data.content?.[0]?.text || "";
+        res.writeHead(200, { "content-type": "application/json" });
+        res.end(JSON.stringify({ reply }));
+      } catch {
+        res.writeHead(500, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "Chat request failed" }));
+      }
+    });
+    return;
+  }
+
   if (req.method === "POST" && pathname === "/api/analysis-log") {
     req.resume();
     res.writeHead(200, { "content-type": "application/json" });

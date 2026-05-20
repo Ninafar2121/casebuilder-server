@@ -1,9 +1,13 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import * as ImagePicker from "expo-image-picker";
+import * as DocumentPicker from "expo-document-picker";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
+  ActionSheetIOS,
   Alert,
+  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -37,8 +41,64 @@ export default function AddEvidenceScreen() {
   const [date, setDate] = useState("");
   const [tags, setTags] = useState("");
   const [caseId, setCaseId] = useState(activeCase?.id || cases[0]?.id || "");
+  const [pickedImageUri, setPickedImageUri] = useState<string | null>(null);
+  const [pickedFileName, setPickedFileName] = useState<string | null>(null);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
+
+  const handleTypeSelect = (selectedType: Evidence["type"]) => {
+    setType(selectedType);
+    setPickedImageUri(null);
+    setPickedFileName(null);
+  };
+
+  const pickImage = async () => {
+    try {
+      const { status, canAskAgain } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Photo Access Needed",
+          canAskAgain
+            ? "Please allow photo access to attach evidence photos."
+            : "Photo access is disabled. Go to iPhone Settings > CaseBuilder AI > Photos > select All Photos.",
+          [{ text: "OK" }]
+        );
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"] as any,
+        allowsEditing: false,
+        quality: 0.85,
+        allowsMultipleSelection: false,
+      });
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        setPickedImageUri(asset.uri);
+        const fileName = asset.fileName ?? asset.uri.split("/").pop() ?? "photo.jpg";
+        setPickedFileName(fileName);
+        if (!name) setName(fileName.replace(/\.[^.]+$/, ""));
+      }
+    } catch (err) {
+      Alert.alert("Could not open photos", "Go to iPhone Settings > CaseBuilder AI > Photos > All Photos, then try again.");
+    }
+  };
+
+  const pickDocument = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: "*/*",
+        copyToCacheDirectory: true,
+        multiple: false,
+      });
+      if (!result.canceled && result.assets && result.assets[0]) {
+        const asset = result.assets[0];
+        setPickedFileName(asset.name);
+        if (!name) setName(asset.name.replace(/\.[^.]+$/, ""));
+      }
+    } catch (err) {
+      Alert.alert("Could not open files", "Make sure you have files saved in your Files app or iCloud Drive, then try again.");
+    }
+  };
 
   const handleAdd = () => {
     if (!name.trim()) {
@@ -49,7 +109,6 @@ export default function AddEvidenceScreen() {
       Alert.alert("Case Required", "Please create a case first.");
       return;
     }
-
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     addEvidence({
       caseId,
@@ -58,8 +117,32 @@ export default function AddEvidenceScreen() {
       text: text.trim() || undefined,
       date: date.trim() || undefined,
       tags: tags.split(",").map(t => t.trim()).filter(Boolean),
+      uri: pickedImageUri ?? undefined,
     });
     router.back();
+  };
+
+  const needsPicker = type === "image" || type === "receipt" || type === "pdf" || type === "voice";
+
+  const showUploadOptions = () => {
+    if (Platform.OS === "ios") {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ["Cancel", "Photo or Video", "Browse Files (PDF, Docs, Audio)"],
+          cancelButtonIndex: 0,
+        },
+        (buttonIndex) => {
+          if (buttonIndex === 1) pickImage();
+          if (buttonIndex === 2) pickDocument();
+        }
+      );
+    } else {
+      Alert.alert("Upload Evidence", "Choose what to attach", [
+        { text: "Photo or Video", onPress: pickImage },
+        { text: "Browse Files", onPress: pickDocument },
+        { text: "Cancel", style: "cancel" },
+      ]);
+    }
   };
 
   return (
@@ -113,7 +196,7 @@ export default function AddEvidenceScreen() {
             {EVIDENCE_TYPES.map(et => (
               <Pressable
                 key={et.type}
-                onPress={() => setType(et.type)}
+                onPress={() => handleTypeSelect(et.type)}
                 style={[
                   styles.typeBtn,
                   {
@@ -130,6 +213,32 @@ export default function AddEvidenceScreen() {
             ))}
           </View>
         </View>
+
+        {needsPicker && (
+          <View style={styles.field}>
+            <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Attachment</Text>
+            {pickedImageUri && (
+              <View style={[styles.previewCard, { borderColor: colors.border, backgroundColor: colors.card }]}>
+                <Image source={{ uri: pickedImageUri }} style={styles.previewImage} resizeMode="cover" />
+              </View>
+            )}
+            {pickedFileName && !pickedImageUri && (
+              <View style={[styles.fileCard, { borderColor: colors.teal, backgroundColor: colors.teal + "10" }]}>
+                <Feather name="check-circle" size={20} color={colors.teal} />
+                <Text style={[styles.fileName, { color: colors.foreground }]} numberOfLines={1}>{pickedFileName}</Text>
+              </View>
+            )}
+            <Pressable
+              onPress={showUploadOptions}
+              style={[styles.pickBtn, { borderColor: colors.teal, backgroundColor: colors.teal }]}
+            >
+              <Feather name="upload" size={18} color="#FFFFFF" />
+              <Text style={[styles.pickBtnText, { color: "#FFFFFF" }]}>
+                {pickedImageUri || pickedFileName ? "Change Upload" : "Upload File"}
+              </Text>
+            </Pressable>
+          </View>
+        )}
 
         <View style={styles.field}>
           <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Name / Title *</Text>
@@ -265,6 +374,41 @@ const styles = StyleSheet.create({
   },
   caseChipText: {
     fontSize: 13,
+    fontFamily: "DMSans_500Medium",
+  },
+  pickBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    paddingVertical: 16,
+    borderRadius: 14,
+    borderWidth: 1.5,
+  },
+  pickBtnText: {
+    fontSize: 15,
+    fontFamily: "DMSans_600SemiBold",
+  },
+  previewCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    overflow: "hidden",
+  },
+  previewImage: {
+    width: "100%",
+    height: 200,
+  },
+  fileCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  fileName: {
+    flex: 1,
+    fontSize: 14,
     fontFamily: "DMSans_500Medium",
   },
   addBtn: {

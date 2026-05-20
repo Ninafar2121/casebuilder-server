@@ -112,6 +112,15 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="chat"
+        options={{
+          title: "Chat",
+          tabBarIcon: ({ color }) => (
+            <TabIcon featherName="message-circle" sfName="bubble.left.and.bubble.right" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="risk"
         options={{
           title: "Analysis",

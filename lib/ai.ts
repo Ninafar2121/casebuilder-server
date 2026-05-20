@@ -4,7 +4,7 @@ import { buildLegalAnalysisPrompt } from "./buildLegalAnalysisPrompt";
 import { countryCodeToName } from "./legalJurisdictions";
 import { getLegalKnowledge } from "./getLegalKnowledge";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || "";
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || "https://casebuilder-server.onrender.com";
 
 async function logAnalysis(payload: {
   jurisdiction: string;
@@ -27,9 +27,6 @@ async function logAnalysis(payload: {
     // Logging is best-effort — never block the analysis
   }
 }
-
-const BASE_URL = process.env.EXPO_PUBLIC_AI_INTEGRATIONS_ANTHROPIC_BASE_URL;
-const API_KEY = process.env.EXPO_PUBLIC_AI_INTEGRATIONS_ANTHROPIC_API_KEY;
 
 const BASE_LEGAL_SYSTEM_PROMPT = `You are CaseBuilder AI, an intelligent case organization assistant that provides AI-powered informational analysis guided by the user's selected Canadian province or U.S. state.
 
@@ -70,23 +67,10 @@ function getJurisdictionLabel(caseData: Case): string {
 }
 
 async function callAnthropic(prompt: string, systemPrompt: string): Promise<string> {
-  if (!BASE_URL || !API_KEY) {
-    throw new Error("AI service not configured");
-  }
-
-  const response = await fetch(`${BASE_URL}/v1/messages`, {
+  const response = await fetch(`${API_BASE_URL}/api/ai/analyze`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": API_KEY,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: "claude-haiku-4-5",
-      max_tokens: 8192,
-      system: systemPrompt,
-      messages: [{ role: "user", content: prompt }],
-    }),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt, systemPrompt }),
   });
 
   if (!response.ok) {
@@ -94,7 +78,7 @@ async function callAnthropic(prompt: string, systemPrompt: string): Promise<stri
   }
 
   const data = await response.json();
-  return data.content[0]?.text || "";
+  return data.text || "";
 }
 
 export async function classifyDisputeType(description: string, country: "CA" | "US", jurisdiction: string): Promise<string> {
@@ -325,7 +309,7 @@ export function computeNextSteps(
   }
 
   if (!caseData.lawyerQuestions || caseData.lawyerQuestions.length === 0) {
-    steps.push("Generate questions to ask a lawyer — found in the AI Organizer tab.");
+    steps.push("Generate questions to ask a lawyer — found in the AI Analysis tab.");
   }
 
   if (evidenceCount >= 3 && timelineCount >= 3 && caseData.aiSummary && caseData.riskScore !== undefined) {

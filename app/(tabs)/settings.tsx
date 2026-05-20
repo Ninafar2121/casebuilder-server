@@ -19,7 +19,6 @@ import { useProfile } from "@/context/ProfileContext";
 import { useColors } from "@/hooks/useColors";
 import { useTranslation } from "@/hooks/useTranslation";
 import { openSupportEmail } from "@/lib/support";
-import { useSubscription } from "@/lib/revenuecat";
 
 function SettingRow({
   icon,
@@ -116,7 +115,6 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { profile, updateProfile } = useProfile();
   const { lockEnabled, autoLockMinutes, hasBiometrics, setLockEnabled, setAutoLockMinutes } = useAppLock();
-  const { activeTier, restore, isRestoring } = useSubscription();
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : 0;
@@ -204,21 +202,13 @@ export default function SettingsScreen() {
         <View style={[styles.cardGroup, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <SettingRow
             icon="award"
-            label={activeTier !== "free" ? `${t("currentPlan")} ${activeTier.charAt(0).toUpperCase() + activeTier.slice(1)}` : t("upgradePlan")}
-            subtitle={activeTier !== "free" ? t("managePlanSub") : t("upgradePlanSub")}
-            onPress={() => router.push("/paywall")}
+            label="CaseBuilder AI — Full Access"
+            subtitle="All features are currently free"
             rightElement={
-              activeTier !== "free" ? (
-                <View style={[styles.tierBadge, { backgroundColor: activeTier === "pro" ? "#1E3A5F" : activeTier === "plus" ? "#C9A227" : "#1F6F78" }]}>
-                  <Text style={styles.tierBadgeText}>{activeTier.toUpperCase()}</Text>
-                </View>
-              ) : undefined
+              <View style={[styles.tierBadge, { backgroundColor: "#1F6F78" }]}>
+                <Text style={styles.tierBadgeText}>FREE</Text>
+              </View>
             }
-          />
-          <SettingRow
-            icon="refresh-cw"
-            label={isRestoring ? t("restorePurchases") + "…" : t("restorePurchases")}
-            onPress={() => restore().catch(() => Alert.alert(t("restorePurchases"), t("restorePurchasesMsg"), [{ text: t("ok") }]))}
           />
         </View>
 
