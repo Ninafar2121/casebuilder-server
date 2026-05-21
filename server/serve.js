@@ -235,6 +235,47 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (req.method === "GET" && pathname === "/privacy") {
+    res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+    res.end(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Privacy Policy — CaseBuilder AI</title><style>body{font-family:sans-serif;max-width:700px;margin:40px auto;padding:0 20px;color:#1a1a2e}h1{color:#0D1F35}h2{color:#1F6F78}a{color:#1F6F78}</style></head><body>
+<h1>Privacy Policy</h1>
+<p><strong>Last updated: May 2026</strong></p>
+<p>CaseBuilder AI ("we", "our", or "us") is committed to protecting your privacy. This policy explains how we handle your information.</p>
+<h2>Data Storage</h2>
+<p>All case data, evidence, timelines, and notes you enter are stored <strong>locally on your device only</strong>. We do not upload, transmit, or store your case information on any server.</p>
+<h2>AI Features</h2>
+<p>When you use AI Chat or AI Analysis features, your messages are sent to our secure server to generate a response using the Anthropic API. These messages are not stored or logged.</p>
+<h2>Payments</h2>
+<p>Subscriptions are processed by Apple via In-App Purchase. We do not collect or store payment information.</p>
+<h2>Analytics</h2>
+<p>We do not use third-party analytics or advertising SDKs. We do not track you across apps or websites.</p>
+<h2>Contact</h2>
+<p>Questions? Email us at <a href="mailto:support@casebuilderai.com">support@casebuilderai.com</a></p>
+</body></html>`);
+    return;
+  }
+
+  if (req.method === "GET" && pathname === "/terms") {
+    res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+    res.end(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Terms of Use — CaseBuilder AI</title><style>body{font-family:sans-serif;max-width:700px;margin:40px auto;padding:0 20px;color:#1a1a2e}h1{color:#0D1F35}h2{color:#1F6F78}a{color:#1F6F78}</style></head><body>
+<h1>Terms of Use</h1>
+<p><strong>Last updated: May 2026</strong></p>
+<p>By using CaseBuilder AI, you agree to these terms. Please read them carefully.</p>
+<h2>Not Legal Advice</h2>
+<p>CaseBuilder AI is not a law firm and does not provide legal advice. All information is for organizational and informational purposes only. Always consult a licensed attorney for legal matters.</p>
+<h2>Subscription</h2>
+<p>CaseBuilder AI offers a $2.99/month subscription with a 7-day free trial. Subscriptions auto-renew unless cancelled. Manage or cancel anytime in your App Store settings.</p>
+<h2>Acceptable Use</h2>
+<p>You agree to use CaseBuilder AI only for lawful purposes and not to misuse the AI features.</p>
+<h2>Limitation of Liability</h2>
+<p>CaseBuilder AI is provided "as is". We are not liable for any outcomes related to your legal situation.</p>
+<h2>Contact</h2>
+<p>Questions? Email us at <a href="mailto:support@casebuilderai.com">support@casebuilderai.com</a></p>
+<p>This app is subject to Apple's Standard EULA: <a href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/">https://www.apple.com/legal/internet-services/itunes/dev/stdeula/</a></p>
+</body></html>`);
+    return;
+  }
+
   if (pathname === "/" || pathname === "/manifest") {
     const platform = req.headers["expo-platform"];
     if (platform === "ios" || platform === "android") {
