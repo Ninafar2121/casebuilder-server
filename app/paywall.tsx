@@ -2,7 +2,7 @@ import { Feather } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Linking from "expo-linking";
 import { router } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -12,15 +12,12 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import Purchases from "react-native-purchases";
 import { useSubscription } from "@/lib/revenuecat";
-import { redeemPromoCode, getPromoAccess, type PromoAccess } from "@/lib/promo";
-import type { PurchasesPackage } from "react-native-purchases";
 
 const ALL_FEATURES = [
   { icon: "map-pin", text: "AI analysis tailored to your province or state" },
@@ -38,22 +35,11 @@ export default function PaywallScreen() {
   const insets = useSafeAreaInsets();
   const { basicPackage, purchase, isPurchasing, restore, isRestoring, activeTier } = useSubscription();
 
-  const [promoAccess, setPromoAccess] = useState<PromoAccess | null>(null);
-  const [showPromoModal, setShowPromoModal] = useState(false);
-  const [promoCode, setPromoCode] = useState("");
-  const [promoLoading, setPromoLoading] = useState(false);
-  const [promoError, setPromoError] = useState<string | null>(null);
-  const [promoSuccess, setPromoSuccess] = useState<string | null>(null);
-
   const [purchaseSuccess, setPurchaseSuccess] = useState(false);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;
-
-  useEffect(() => {
-    getPromoAccess().then(setPromoAccess);
-  }, []);
 
   const handlePurchase = async () => {
     let pkg = basicPackage;
@@ -61,7 +47,7 @@ export default function PaywallScreen() {
       try {
         const offerings = await Purchases.getOfferings();
         const available = offerings.current?.availablePackages ?? [];
-        pkg = available.find((p) => p.identifier === "basic_monthly") ?? available[0] ?? null;
+        pkg = available.find((p) => p.identifier === "$rc_monthly") ?? available[0] ?? null;
       } catch (err: any) {
         Alert.alert("Connection Error", err?.message ?? "Could not load plans. Please check your connection and try again.");
         return;
@@ -89,36 +75,6 @@ export default function PaywallScreen() {
     }
   };
 
-  const handleRedeemPromo = async () => {
-    if (!promoCode.trim()) return;
-    setPromoLoading(true);
-    setPromoError(null);
-    setPromoSuccess(null);
-    try {
-      const result = await redeemPromoCode(promoCode);
-      if (result.success && result.access) {
-        setPromoAccess(result.access);
-        setPromoSuccess(result.message);
-        setTimeout(() => {
-          setShowPromoModal(false);
-          setPromoCode("");
-          setPromoSuccess(null);
-          router.back();
-        }, 1800);
-      } else {
-        setPromoError(result.message);
-      }
-    } catch {
-      setPromoError("Could not connect. Please check your connection and try again.");
-    } finally {
-      setPromoLoading(false);
-    }
-  };
-
-  const promoExpiryText = promoAccess
-    ? `Free access until ${new Date(promoAccess.expiresAt).toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })}`
-    : null;
-
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.topBar, { paddingTop: topPad + 8 }]}>
@@ -135,13 +91,6 @@ export default function PaywallScreen() {
         contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 40 }]}
         showsVerticalScrollIndicator={false}
       >
-        {promoAccess && (
-          <View style={[styles.promoBanner, { backgroundColor: colors.teal + "18", borderColor: colors.teal + "50" }]}>
-            <Feather name="gift" size={16} color={colors.teal} />
-            <Text style={[styles.promoBannerText, { color: colors.teal }]}>{promoExpiryText}</Text>
-          </View>
-        )}
-
         <View style={styles.hero}>
           <View style={[styles.heroBadge, { backgroundColor: colors.teal + "18", borderColor: colors.teal + "40" }]}>
             <Feather name="shield" size={12} color={colors.teal} />
@@ -209,14 +158,6 @@ export default function PaywallScreen() {
         </View>
 
         <Pressable
-          style={({ pressed }) => [styles.promoLink, { opacity: pressed ? 0.6 : 1 }]}
-          onPress={() => setShowPromoModal(true)}
-        >
-          <Feather name="gift" size={14} color={colors.teal} />
-          <Text style={[styles.promoLinkText, { color: colors.teal }]}>Have a promo code?</Text>
-        </Pressable>
-
-        <Pressable
           style={({ pressed }) => [styles.restoreBtn, { opacity: pressed || isRestoring ? 0.6 : 1 }]}
           onPress={handleRestore}
           disabled={isRestoring}
@@ -253,62 +194,6 @@ export default function PaywallScreen() {
           </Pressable>
         </View>
       </ScrollView>
-
-      {/* Promo Code Modal */}
-      <Modal transparent animationType="fade" visible={showPromoModal} onRequestClose={() => setShowPromoModal(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
-            <View style={[styles.promoIconWrap, { backgroundColor: colors.teal + "18" }]}>
-              <Feather name="gift" size={28} color={colors.teal} />
-            </View>
-            <Text style={[styles.modalTitle, { color: colors.foreground }]}>Enter Promo Code</Text>
-            <Text style={[styles.modalBody, { color: colors.mutedForeground }]}>
-              Enter your code below to unlock free access.
-            </Text>
-
-            {promoSuccess ? (
-              <View style={[styles.promoSuccessBox, { backgroundColor: colors.teal + "18" }]}>
-                <Feather name="check-circle" size={18} color={colors.teal} />
-                <Text style={[styles.promoSuccessText, { color: colors.teal }]}>{promoSuccess}</Text>
-              </View>
-            ) : (
-              <>
-                <TextInput
-                  style={[styles.codeInput, { borderColor: promoError ? "#EF4444" : colors.border, color: colors.foreground, backgroundColor: colors.background }]}
-                  placeholder="e.g. LAUNCH2026"
-                  placeholderTextColor={colors.mutedForeground}
-                  value={promoCode}
-                  onChangeText={(t) => { setPromoCode(t); setPromoError(null); }}
-                  autoCapitalize="characters"
-                  autoCorrect={false}
-                />
-                {promoError && (
-                  <Text style={styles.promoErrorText}>{promoError}</Text>
-                )}
-                <View style={styles.modalActions}>
-                  <Pressable
-                    style={({ pressed }) => [styles.modalCancel, { borderColor: colors.border, opacity: pressed ? 0.7 : 1 }]}
-                    onPress={() => { setShowPromoModal(false); setPromoCode(""); setPromoError(null); }}
-                  >
-                    <Text style={[styles.modalCancelText, { color: colors.mutedForeground }]}>Cancel</Text>
-                  </Pressable>
-                  <Pressable
-                    style={({ pressed }) => [styles.modalConfirm, { backgroundColor: colors.teal, opacity: pressed || promoLoading ? 0.8 : 1 }]}
-                    onPress={handleRedeemPromo}
-                    disabled={promoLoading}
-                  >
-                    {promoLoading ? (
-                      <ActivityIndicator color="#FFFFFF" size="small" />
-                    ) : (
-                      <Text style={styles.modalConfirmText}>Redeem</Text>
-                    )}
-                  </Pressable>
-                </View>
-              </>
-            )}
-          </View>
-        </View>
-      </Modal>
 
       {/* Purchase Success Modal */}
       <Modal transparent animationType="fade" visible={purchaseSuccess} onRequestClose={() => { setPurchaseSuccess(false); router.back(); }}>
