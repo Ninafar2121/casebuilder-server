@@ -194,7 +194,7 @@ const translations = {
     generalQuestion: "General Question",
     marketNote:
       "CaseBuilder AI currently supports users in Canada and the United States. Information and issue-spotting are tailored by province or state.",
-    versionLabel: "CaseBuilder AI v1.0.0",
+    versionLabel: "CaseBuilder AI v1.0.8",
 
     // ── AI Organizer screen ──
     aiOrganizerTitle: "AI Organizer",
@@ -614,7 +614,7 @@ const translations = {
     generalQuestion: "Question générale",
     marketNote:
       "CaseBuilder AI supporte actuellement les utilisateurs au Canada et aux États-Unis. Les informations et la détection de problèmes sont adaptées par province ou état.",
-    versionLabel: "CaseBuilder AI v1.0.0",
+    versionLabel: "CaseBuilder AI v1.0.8",
 
     // ── AI Organizer screen ──
     aiOrganizerTitle: "Organisateur IA",
