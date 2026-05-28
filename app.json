@@ -16,7 +16,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.casebuilder.ai",
-      "buildNumber": "21",
+      "buildNumber": "22",
       "infoPlist": {
         "NSCameraUsageDescription": "CaseBuilder AI uses your camera to capture evidence photos and documents for your case.",
         "NSPhotoLibraryUsageDescription": "CaseBuilder AI accesses your photo library to attach evidence images and documents to your case.",

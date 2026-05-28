@@ -12,7 +12,7 @@ export const ENTITLEMENT_BASIC = "basic";
 export const ENTITLEMENT_PLUS = "plus";
 export const ENTITLEMENT_PRO = "pro";
 
-export const PACKAGE_BASIC = "basic_monthly";
+export const PACKAGE_BASIC = "$rc_monthly";
 export const PACKAGE_PLUS = "plus_monthly";
 export const PACKAGE_PRO = "pro_monthly";
 
