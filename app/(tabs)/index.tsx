@@ -4,6 +4,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React from "react";
 import {
+  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -135,11 +136,10 @@ export default function HomeScreen() {
       {/* ── Hero Header ── */}
       <View style={[styles.header, { paddingTop: topPad + 16 }]}>
         <LinearGradient
-          colors={["#0E2E57", "#143B6D", "#1F4F86"]}
+          colors={["#0D1F35", "#1A3A5C"]}
           style={StyleSheet.absoluteFill}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          locations={[0, 0.52, 1]}
         />
         <View style={styles.headerRule} pointerEvents="none" />
 
@@ -148,6 +148,11 @@ export default function HomeScreen() {
             <Text style={styles.greeting}>{t("greeting")}</Text>
 
             <View style={styles.headerTitleRow}>
+              <Image
+                source={require("@/assets/images/icon.png")}
+                style={styles.headerLogo}
+                resizeMode="contain"
+              />
               <Text style={styles.headerTitle}>CaseBuilder</Text>
               <View style={styles.aiBadge}>
                 <Text style={styles.aiBadgeText}>AI</Text>
@@ -218,7 +223,7 @@ export default function HomeScreen() {
           style={[styles.ctaWrapper, { shadowColor: "#102E57" }]}
         >
           <LinearGradient
-            colors={["#173E73", "#2E9FB0"]}
+            colors={["#C9A227", "#B8941E"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.ctaGradient}
@@ -226,7 +231,7 @@ export default function HomeScreen() {
             <View style={styles.ctaContent}>
               <View style={styles.ctaLeft}>
                 <View style={styles.ctaIconWrap}>
-                  <Feather name={cases.length === 0 ? "briefcase" : "plus-circle"} size={26} color="#FFFFFF" />
+                  <Feather name={cases.length === 0 ? "briefcase" : "plus-circle"} size={26} color="#0D1F35" />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.ctaTitle}>
@@ -241,7 +246,7 @@ export default function HomeScreen() {
                 </View>
               </View>
               <View style={styles.ctaArrow}>
-                <Feather name="arrow-right" size={22} color="rgba(255,255,255,0.95)" />
+                <Feather name="arrow-right" size={22} color="rgba(13,31,53,0.85)" />
               </View>
             </View>
           </LinearGradient>
@@ -476,6 +481,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
   },
+  headerLogo: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+  },
   headerTitle: {
     fontSize: 42,
     fontFamily: "Raleway_700Bold",
@@ -487,9 +497,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 16,
-    backgroundColor: "rgba(212,175,55,0.10)",
+    backgroundColor: "rgba(201,162,39,0.18)",
     borderWidth: 1.5,
-    borderColor: "rgba(212,175,55,0.55)",
+    borderColor: "#C9A227",
     alignItems: "center",
     justifyContent: "center",
     marginTop: 6,
@@ -497,7 +507,7 @@ const styles = StyleSheet.create({
   aiBadgeText: {
     fontSize: 16,
     fontFamily: "DMSans_600SemiBold",
-    color: "#E1BE54",
+    color: "#C9A227",
     letterSpacing: 0.5,
   },
   headerSub: {
@@ -537,10 +547,11 @@ const styles = StyleSheet.create({
     gap: 4,
     borderWidth: 1,
     borderColor: "rgba(220,228,239,0.9)",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.06,
-    shadowRadius: 30,
-    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 6,
   },
   statNum: {
     fontSize: 34,
@@ -618,9 +629,9 @@ const styles = StyleSheet.create({
     width: 58,
     height: 58,
     borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.14)",
+    backgroundColor: "rgba(13,31,53,0.12)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.14)",
+    borderColor: "rgba(13,31,53,0.15)",
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
@@ -629,7 +640,7 @@ const styles = StyleSheet.create({
   ctaTitle: {
     fontSize: 26,
     fontFamily: "Raleway_700Bold",
-    color: "#FFFFFF",
+    color: "#0D1F35",
     letterSpacing: -0.3,
     lineHeight: 30,
     marginBottom: 5,
@@ -637,20 +648,20 @@ const styles = StyleSheet.create({
   ctaSub: {
     fontSize: 14,
     fontFamily: "DMSans_500Medium",
-    color: "rgba(255,255,255,0.88)",
+    color: "rgba(13,31,53,0.78)",
     lineHeight: 21,
   },
   ctaSupport: {
     fontSize: 12,
     fontFamily: "DMSans_600SemiBold",
-    color: "rgba(255,255,255,0.68)",
+    color: "rgba(13,31,53,0.58)",
     marginTop: 6,
   },
   ctaArrow: {
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: "rgba(255,255,255,0.18)",
+    backgroundColor: "rgba(13,31,53,0.12)",
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
@@ -681,10 +692,11 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     borderWidth: 1.5,
     overflow: "hidden",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 6,
   },
   previewCardHeader: {
     flexDirection: "row",
@@ -766,10 +778,11 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     marginBottom: 12,
     overflow: "hidden",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.09,
-    shadowRadius: 22,
-    elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 6,
   },
   caseCardTop: {
     flexDirection: "row",
@@ -949,10 +962,11 @@ const styles = StyleSheet.create({
     minHeight: 148,
     borderWidth: 1,
     borderColor: "#E7EEF5",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.04,
-    shadowRadius: 28,
-    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 6,
   },
   toolIconContainer: {
     position: "relative",
@@ -999,10 +1013,11 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: "#DCE4EF",
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.07,
-    shadowRadius: 14,
-    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 6,
   },
   exportShortcutIcon: {
     width: 40,
@@ -1032,10 +1047,11 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     borderWidth: 1,
     borderColor: "#DCE4EF",
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.07,
-    shadowRadius: 14,
-    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 6,
   },
   lawyerCardLeft: {
     flex: 1,

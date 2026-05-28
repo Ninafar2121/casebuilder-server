@@ -2,7 +2,7 @@ import { BlurView } from "expo-blur";
 import { Tabs, Redirect } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import React from "react";
-import { Platform, StyleSheet } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 import { useProfile } from "@/context/ProfileContext";
 import { useColors } from "@/hooks/useColors";
 
@@ -26,45 +26,63 @@ export default function TabLayout() {
     } catch {}
   }
 
+  const GOLD = "#C9A227";
+  const NAVY = "#0D1F35";
+
   const TabIcon = ({
     featherName,
     sfName,
     color,
+    focused,
   }: {
     featherName: string;
     sfName?: string;
     color: string;
+    focused: boolean;
   }) => {
-    if (isIOS && SymbolView && sfName) {
-      return <SymbolView name={sfName} tintColor={color} size={22} />;
-    }
-    return <Feather name={featherName as any} size={22} color={color} />;
+    return (
+      <View style={{ alignItems: "center" }}>
+        {focused && (
+          <View style={{
+            position: "absolute",
+            top: -10,
+            width: 20,
+            height: 3,
+            borderRadius: 2,
+            backgroundColor: GOLD,
+          }} />
+        )}
+        {isIOS && SymbolView && sfName
+          ? <SymbolView name={sfName} tintColor={color} size={22} />
+          : <Feather name={featherName as any} size={22} color={color} />
+        }
+      </View>
+    );
   };
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: colors.teal,
-        tabBarInactiveTintColor: colors.mutedForeground,
+        tabBarActiveTintColor: GOLD,
+        tabBarInactiveTintColor: "rgba(255,255,255,0.4)",
         headerShown: false,
         tabBarStyle: {
           position: "absolute",
-          backgroundColor: isIOS ? "transparent" : colors.card,
-          borderTopWidth: 1,
-          borderTopColor: colors.border,
+          backgroundColor: isIOS ? "transparent" : NAVY,
+          borderTopWidth: 0,
           elevation: 0,
-          shadowColor: "#1A2B40",
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: isDark ? 0 : 0.06,
-          shadowRadius: 8,
+          shadowColor: "#000000",
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.18,
+          shadowRadius: 12,
           height: isWeb ? 84 : undefined,
         },
         tabBarBackground: () =>
           isIOS ? (
             <BlurView
               intensity={98}
-              tint={isDark ? "dark" : "light"}
-              style={StyleSheet.absoluteFill}
+              tint="dark"
+              style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(13,31,53,0.85)" }]}
             />
           ) : null,
         tabBarLabelStyle: {
@@ -79,8 +97,8 @@ export default function TabLayout() {
         name="index"
         options={{
           title: "Home",
-          tabBarIcon: ({ color }) => (
-            <TabIcon featherName="home" sfName="house" color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon featherName="home" sfName="house" color={color} focused={focused} />
           ),
         }}
       />
@@ -88,8 +106,8 @@ export default function TabLayout() {
         name="evidence"
         options={{
           title: "Evidence",
-          tabBarIcon: ({ color }) => (
-            <TabIcon featherName="folder" sfName="folder" color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon featherName="folder" sfName="folder" color={color} focused={focused} />
           ),
         }}
       />
@@ -97,8 +115,8 @@ export default function TabLayout() {
         name="timeline"
         options={{
           title: "Timeline",
-          tabBarIcon: ({ color }) => (
-            <TabIcon featherName="clock" sfName="clock" color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon featherName="clock" sfName="clock" color={color} focused={focused} />
           ),
         }}
       />
@@ -106,8 +124,8 @@ export default function TabLayout() {
         name="ai"
         options={{
           title: "AI",
-          tabBarIcon: ({ color }) => (
-            <TabIcon featherName="cpu" sfName="brain" color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon featherName="cpu" sfName="brain" color={color} focused={focused} />
           ),
         }}
       />
@@ -115,8 +133,8 @@ export default function TabLayout() {
         name="chat"
         options={{
           title: "Chat",
-          tabBarIcon: ({ color }) => (
-            <TabIcon featherName="message-circle" sfName="bubble.left.and.bubble.right" color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon featherName="message-circle" sfName="bubble.left.and.bubble.right" color={color} focused={focused} />
           ),
         }}
       />
@@ -124,8 +142,8 @@ export default function TabLayout() {
         name="risk"
         options={{
           title: "Analysis",
-          tabBarIcon: ({ color }) => (
-            <TabIcon featherName="search" sfName="magnifyingglass" color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon featherName="search" sfName="magnifyingglass" color={color} focused={focused} />
           ),
         }}
       />
@@ -133,8 +151,8 @@ export default function TabLayout() {
         name="settings"
         options={{
           title: "Settings",
-          tabBarIcon: ({ color }) => (
-            <TabIcon featherName="settings" sfName="gear" color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <TabIcon featherName="settings" sfName="gear" color={color} focused={focused} />
           ),
         }}
       />
