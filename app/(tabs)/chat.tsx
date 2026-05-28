@@ -1,5 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { router } from "expo-router";
 import React, { useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -16,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { DisclaimerBanner } from "@/components/DisclaimerBanner";
 import { useCases } from "@/context/CaseContext";
 import { useColors } from "@/hooks/useColors";
+import { useSubscription } from "@/lib/revenuecat";
 import { useTranslation } from "@/hooks/useTranslation";
 
 const API_SERVER = process.env.EXPO_PUBLIC_API_BASE_URL ?? "https://casebuilder-server.onrender.com";
@@ -79,7 +81,9 @@ export default function ChatTabScreen() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const { activeCase, cases } = useCases();
+  const { hasAccessTo } = useSubscription();
   const currentCase = activeCase || cases[0];
+  const isPremium = hasAccessTo("basic");
 
   const jurisdictionLabel = currentCase
     ? currentCase.country === "CA"
@@ -249,6 +253,31 @@ export default function ChatTabScreen() {
           <Feather name="send" size={18} color="#FFFFFF" />
         </Pressable>
       </View>
+
+      {!isPremium && (
+        <View style={[styles.lockedOverlay, { backgroundColor: colors.background }]}>
+          <View style={[styles.lockedCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.lockIconWrap}>
+              <Feather name="lock" size={28} color="#C9A227" />
+            </View>
+            <Text style={[styles.lockedTitle, { color: colors.foreground }]}>AI Chat is Premium</Text>
+            <Text style={[styles.lockedSub, { color: colors.mutedForeground }]}>
+              Get unlimited AI legal chat, case summaries, and risk analysis for just $2.99/month.
+            </Text>
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                router.push("/paywall");
+              }}
+              style={({ pressed }) => [styles.lockedBtn, { opacity: pressed ? 0.85 : 1 }]}
+            >
+              <Feather name="award" size={16} color="#0D1F35" />
+              <Text style={styles.lockedBtnText}>Unlock for $2.99/mo</Text>
+            </Pressable>
+            <Text style={[styles.lockedTrial, { color: colors.mutedForeground }]}>7-day free trial · Cancel anytime</Text>
+          </View>
+        </View>
+      )}
     </KeyboardAvoidingView>
   );
 }
@@ -388,5 +417,64 @@ const styles = StyleSheet.create({
     borderRadius: 21,
     alignItems: "center",
     justifyContent: "center",
+  },
+
+  /* ── Paywall overlay ── */
+  lockedOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 28,
+  },
+  lockedCard: {
+    width: "100%",
+    borderRadius: 24,
+    borderWidth: 1,
+    padding: 28,
+    alignItems: "center",
+    gap: 12,
+  },
+  lockIconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "rgba(201,162,39,0.12)",
+    borderWidth: 1.5,
+    borderColor: "rgba(201,162,39,0.35)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
+  },
+  lockedTitle: {
+    fontSize: 20,
+    fontFamily: "Raleway_700Bold",
+    letterSpacing: -0.3,
+    textAlign: "center",
+  },
+  lockedSub: {
+    fontSize: 14,
+    fontFamily: "DMSans_400Regular",
+    lineHeight: 21,
+    textAlign: "center",
+  },
+  lockedBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#C9A227",
+    paddingHorizontal: 28,
+    paddingVertical: 14,
+    borderRadius: 14,
+    marginTop: 6,
+  },
+  lockedBtnText: {
+    fontSize: 15,
+    fontFamily: "DMSans_600SemiBold",
+    color: "#0D1F35",
+  },
+  lockedTrial: {
+    fontSize: 12,
+    fontFamily: "DMSans_400Regular",
+    textAlign: "center",
   },
 });
