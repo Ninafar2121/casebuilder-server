@@ -29,16 +29,16 @@ const colors = {
 
     navy: "#143B6D",
     ivory: "#F5F7FB",
-    teal: "#2E9FB0",
-    gold: "#D4AF37",
+    teal: "#C9A227",
+    gold: "#C9A227",
     alertRed: "#B94141",
     successGreen: "#2E7D57",
     slate: "#13233F",
     lightGray: "#DCE4EF",
 
     navyLight: "#1A4880",
-    tealLight: "#DDF3F4",
-    goldLight: "#F8F1D8",
+    tealLight: "#FDF6E3",
+    goldLight: "#FDF6E3",
     redLight: "#FDEAEA",
     greenLight: "#E8F5EE",
 
@@ -85,8 +85,8 @@ const colors = {
     // App-specific semantic tokens
     navy: "#0E1F2E",
     ivory: "#152A3E",
-    teal: "#2A9CA6",
-    gold: "#D4AE3A",
+    teal: "#C9A227",
+    gold: "#C9A227",
     alertRed: "#D15555",
     successGreen: "#3D9E70",
     slate: "#E8E6E1",
@@ -94,7 +94,7 @@ const colors = {
 
     // Surface variants
     navyLight: "#1A3045",
-    tealLight: "#0E2B2E",
+    tealLight: "#1E1A0A",
     goldLight: "#1E1A0A",
     redLight: "#1E0E0E",
     greenLight: "#0E1E16",

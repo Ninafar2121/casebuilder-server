@@ -645,6 +645,29 @@ export default function RiskCheckerScreen() {
                 </Text>
               </View>
             </View>
+
+            {/* ── Lawyer Finder reminder ── */}
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push("/lawyers");
+              }}
+              style={({ pressed }) => [
+                styles.lawyerCard,
+                { backgroundColor: colors.card, borderColor: "rgba(201,162,39,0.35)", opacity: pressed ? 0.9 : 1 },
+              ]}
+            >
+              <View style={[styles.lawyerIconWrap, { backgroundColor: "rgba(201,162,39,0.12)" }]}>
+                <Feather name="user-check" size={22} color="#C9A227" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.lawyerTitle, { color: colors.foreground }]}>Ready to talk to a real lawyer?</Text>
+                <Text style={[styles.lawyerSub, { color: colors.mutedForeground }]}>
+                  Find verified lawyers in your area who handle your type of dispute.
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={18} color="#C9A227" />
+            </Pressable>
           </>
         )}
       </ScrollView>
@@ -1124,5 +1147,33 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     marginTop: 4,
     fontStyle: "italic",
+  },
+  lawyerCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    marginHorizontal: 20,
+    marginTop: 16,
+    padding: 18,
+    borderRadius: 18,
+    borderWidth: 1.5,
+  },
+  lawyerIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  lawyerTitle: {
+    fontSize: 15,
+    fontFamily: "Raleway_700Bold",
+    marginBottom: 3,
+  },
+  lawyerSub: {
+    fontSize: 12,
+    fontFamily: "DMSans_400Regular",
+    lineHeight: 17,
   },
 });
