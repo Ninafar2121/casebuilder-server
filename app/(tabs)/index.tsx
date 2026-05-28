@@ -4,7 +4,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React from "react";
 import {
-  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -148,11 +147,6 @@ export default function HomeScreen() {
             <Text style={styles.greeting}>{t("greeting")}</Text>
 
             <View style={styles.headerTitleRow}>
-              <Image
-                source={require("@/assets/images/icon.png")}
-                style={styles.headerLogo}
-                resizeMode="contain"
-              />
               <Text style={styles.headerTitle}>CaseBuilder</Text>
               <View style={styles.aiBadge}>
                 <Text style={styles.aiBadgeText}>AI</Text>
@@ -223,7 +217,7 @@ export default function HomeScreen() {
           style={[styles.ctaWrapper, { shadowColor: "#102E57" }]}
         >
           <LinearGradient
-            colors={["#C9A227", "#B8941E"]}
+            colors={["#0D1F35", "#1A3A5C"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.ctaGradient}
@@ -231,7 +225,7 @@ export default function HomeScreen() {
             <View style={styles.ctaContent}>
               <View style={styles.ctaLeft}>
                 <View style={styles.ctaIconWrap}>
-                  <Feather name={cases.length === 0 ? "briefcase" : "plus-circle"} size={26} color="#0D1F35" />
+                  <Feather name={cases.length === 0 ? "briefcase" : "plus-circle"} size={26} color="#C9A227" />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.ctaTitle}>
@@ -246,7 +240,7 @@ export default function HomeScreen() {
                 </View>
               </View>
               <View style={styles.ctaArrow}>
-                <Feather name="arrow-right" size={22} color="rgba(13,31,53,0.85)" />
+                <Feather name="arrow-right" size={22} color="#C9A227" />
               </View>
             </View>
           </LinearGradient>
@@ -481,11 +475,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
   },
-  headerLogo: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-  },
   headerTitle: {
     fontSize: 42,
     fontFamily: "Raleway_700Bold",
@@ -629,9 +618,9 @@ const styles = StyleSheet.create({
     width: 58,
     height: 58,
     borderRadius: 18,
-    backgroundColor: "rgba(13,31,53,0.12)",
+    backgroundColor: "rgba(201,162,39,0.15)",
     borderWidth: 1,
-    borderColor: "rgba(13,31,53,0.15)",
+    borderColor: "rgba(201,162,39,0.3)",
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
@@ -640,7 +629,7 @@ const styles = StyleSheet.create({
   ctaTitle: {
     fontSize: 26,
     fontFamily: "Raleway_700Bold",
-    color: "#0D1F35",
+    color: "#FFFFFF",
     letterSpacing: -0.3,
     lineHeight: 30,
     marginBottom: 5,
@@ -648,20 +637,22 @@ const styles = StyleSheet.create({
   ctaSub: {
     fontSize: 14,
     fontFamily: "DMSans_500Medium",
-    color: "rgba(13,31,53,0.78)",
+    color: "rgba(255,255,255,0.78)",
     lineHeight: 21,
   },
   ctaSupport: {
     fontSize: 12,
     fontFamily: "DMSans_600SemiBold",
-    color: "rgba(13,31,53,0.58)",
+    color: "rgba(255,255,255,0.58)",
     marginTop: 6,
   },
   ctaArrow: {
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: "rgba(13,31,53,0.12)",
+    backgroundColor: "rgba(201,162,39,0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(201,162,39,0.3)",
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
